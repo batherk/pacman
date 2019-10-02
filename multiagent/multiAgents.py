@@ -86,6 +86,34 @@ def scoreEvaluationFunction(currentGameState):
     """
     return currentGameState.getScore()
 
+
+def minmax(gameState,depth,maximizingPlayer=True):
+    """Function for getting best value and move for pacman"""
+    if depth== 0 or gameState.isWin() or gameState.isLose():
+        return scoreEvaluationFunction(gameState), None
+    best_move = ""
+    if maximizingPlayer:
+        max_value = float("-inf")
+        for possible_move in gameState.getLegalActions(0):
+            successor = gameState.generateSuccessor(0,possible_move)
+            value, move = minmax(successor,depth-0.5,False)
+            if max_value < value:
+              max_value = value
+              best_move = possible_move
+        return max_value, best_move
+    else:
+        min_values = []
+        for ghost_id in range(1, gameState.getNumAgents()+1):
+            min_value = float("inf")
+            for possible_move in gameState.getLegalActions(ghost_id):
+                successor = gameState.generateSuccessor(ghost_id,possible_move)
+                value, best_move_pacman = minmax(successor,depth-0.5,True)
+                if min_value > value:
+                  min_value = value
+            min_values.append(min_value)
+        return min(min_values), None
+
+
 class MultiAgentSearchAgent(Agent):
     """
       This class provides some common elements to all of your
@@ -111,6 +139,8 @@ class MinimaxAgent(MultiAgentSearchAgent):
       Your minimax agent (question 2)
     """
 
+    
+
     def getAction(self, gameState):
         """
           Returns the minimax action from the current gameState using self.depth
@@ -128,8 +158,13 @@ class MinimaxAgent(MultiAgentSearchAgent):
           gameState.getNumAgents():
             Returns the total number of agents in the game
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        value, move = minmax(gameState,self.depth)
+        return move
+
+        
+    
+
+        
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
