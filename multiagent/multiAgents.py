@@ -86,34 +86,6 @@ def scoreEvaluationFunction(currentGameState):
     """
     return currentGameState.getScore()
 
-
-def minmax(gameState,depth,maximizingPlayer=True):
-    """Function for getting best value and move for pacman"""
-    if depth== 0 or gameState.isWin() or gameState.isLose():
-        return scoreEvaluationFunction(gameState), None
-    best_move = ""
-    if maximizingPlayer:
-        max_value = float("-inf")
-        for possible_move in gameState.getLegalActions(0):
-            successor = gameState.generateSuccessor(0,possible_move)
-            value, move = minmax(successor,depth-0.5,False)
-            if max_value < value:
-              max_value = value
-              best_move = possible_move
-        return max_value, best_move
-    else:
-        min_values = []
-        for ghost_id in range(1, gameState.getNumAgents()+1):
-            min_value = float("inf")
-            for possible_move in gameState.getLegalActions(ghost_id):
-                successor = gameState.generateSuccessor(ghost_id,possible_move)
-                value, best_move_pacman = minmax(successor,depth-0.5,True)
-                if min_value > value:
-                  min_value = value
-            min_values.append(min_value)
-        return min(min_values), None
-
-
 class MultiAgentSearchAgent(Agent):
     """
       This class provides some common elements to all of your
@@ -133,13 +105,49 @@ class MultiAgentSearchAgent(Agent):
         self.index = 0 # Pacman is always agent index 0
         self.evaluationFunction = util.lookup(evalFn, globals())
         self.depth = int(depth)
+        self.action = ""
 
 class MinimaxAgent(MultiAgentSearchAgent):
     """
       Your minimax agent (question 2)
     """
+    def min_value(self, gameState,depth, agent_id):
+        if gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+        next_agent_id = agent_id + 1
+        if gameState.getNumAgents()-1 == agent_id:
+            next_agent_id = 0
+        min_value = float("inf")
+        for possible_move in gameState.getLegalActions(agent_id):
+            next_state = gameState.generateSuccessor(agent_id, possible_move)
+            value = self.minmax(next_state,depth,next_agent_id)
+            min_value = min(value,min_value)
+        return min_value
 
-    
+    def max_value(self, gameState,depth, agent_id=0):
+        if gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+        max_value = float("-inf")
+        for possible_move in gameState.getLegalActions(agent_id):
+            next_state = gameState.generateSuccessor(agent_id, possible_move)
+            value = self.minmax(next_state, depth, agent_id+1)
+            if value > max_value:
+                max_value = value
+                if depth == 1:
+                    self.action = possible_move
+        return max_value
+
+    def minmax(self, gameState, depth=0, agent_id=0):
+        """Function for getting best value and move for pacman"""
+        if gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+        if agent_id == 0:
+            if depth < self.depth:
+                return self.max_value(gameState, depth + 1, agent_id)
+            else:
+                return self.evaluationFunction(gameState)
+        else:
+            return self.min_value(gameState, depth, agent_id)
 
     def getAction(self, gameState):
         """
@@ -158,8 +166,8 @@ class MinimaxAgent(MultiAgentSearchAgent):
           gameState.getNumAgents():
             Returns the total number of agents in the game
         """
-        value, move = minmax(gameState,self.depth)
-        return move
+        value = self.minmax(gameState)
+        return self.action
 
         
     
@@ -171,12 +179,57 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
       Your minimax agent with alpha-beta pruning (question 3)
     """
 
+    def min_value(self, gameState, depth, alpha, beta, agent_id):
+        if gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+        next_agent_id = agent_id + 1
+        if gameState.getNumAgents()-1 == agent_id:
+            next_agent_id = 0
+        min_value = float("inf")
+        for possible_move in gameState.getLegalActions(agent_id):
+            next_state = gameState.generateSuccessor(agent_id, possible_move)
+            value = self.minmax(next_state,depth,next_agent_id)
+            min_value = min(value,min_value)
+            beta = min(beta,min_value)
+            if beta <= alpha:
+                break
+        return min_value
+
+    def max_value(self, gameState, depth, alpha, beta, agent_id=0):
+        if gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+        max_value = float("-inf")
+        for possible_move in gameState.getLegalActions(agent_id):
+            next_state = gameState.generateSuccessor(agent_id, possible_move)
+            value = self.minmax(next_state, depth, agent_id+1)
+            if value > max_value:
+                max_value = value
+                if depth == 1:
+                    self.action = possible_move
+            alpha = max(alpha, max_value)
+            if beta <= alpha:
+                break
+        return max_value
+
+    def minmax(self, gameState, depth=0, alpha=float("-inf"), beta=float("inf"), agent_id=0):
+        """Function for getting best value and move for pacman"""
+        if gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+        if agent_id == 0:
+            if depth < self.depth:
+                return self.max_value(gameState, depth + 1, alpha, beta, agent_id)
+            else:
+                return self.evaluationFunction(gameState)
+        else:
+            return self.min_value(gameState, depth, alpha, beta, agent_id)
+
     def getAction(self, gameState):
         """
           Returns the minimax action using self.depth and self.evaluationFunction
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        value = self.minmax(gameState)
+        return self.action
+
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
