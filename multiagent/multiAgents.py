@@ -180,6 +180,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     """
 
     def min_value(self, gameState, depth, alpha, beta, agent_id):
+        new_beta = beta
         if gameState.isWin() or gameState.isLose():
             return self.evaluationFunction(gameState)
         next_agent_id = agent_id + 1
@@ -188,27 +189,28 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         min_value = float("inf")
         for possible_move in gameState.getLegalActions(agent_id):
             next_state = gameState.generateSuccessor(agent_id, possible_move)
-            value = self.minmax(next_state,depth,next_agent_id)
+            value = self.minmax(next_state,depth, alpha, new_beta, next_agent_id)
             min_value = min(value,min_value)
-            beta = min(beta,min_value)
-            if beta <= alpha:
-                break
+            new_beta = min(min_value,new_beta)
+            if value < alpha:
+                return value
         return min_value
 
     def max_value(self, gameState, depth, alpha, beta, agent_id=0):
+        new_alpha = alpha
         if gameState.isWin() or gameState.isLose():
             return self.evaluationFunction(gameState)
         max_value = float("-inf")
         for possible_move in gameState.getLegalActions(agent_id):
             next_state = gameState.generateSuccessor(agent_id, possible_move)
-            value = self.minmax(next_state, depth, agent_id+1)
+            value = self.minmax(next_state, depth, new_alpha, beta, agent_id+1)
             if value > max_value:
                 max_value = value
                 if depth == 1:
                     self.action = possible_move
-            alpha = max(alpha, max_value)
-            if beta <= alpha:
-                break
+            new_alpha = max(max_value,new_alpha)
+            if beta < value:
+                return value
         return max_value
 
     def minmax(self, gameState, depth=0, alpha=float("-inf"), beta=float("inf"), agent_id=0):
